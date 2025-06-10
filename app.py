@@ -5,8 +5,9 @@ import pickle
 import base64
 from sklearn.preprocessing import StandardScaler
 import matplotlib
-matplotlib.use('TkAgg')  # Use TkAgg for interactive plots
+matplotlib.use('Agg')  # Use TkAgg for interactive plots
 import matplotlib.pyplot as plt
+from io import BytesIO
 
 
 st.title("Heart Disease Predictor")
@@ -228,17 +229,33 @@ with tab2:
 
         input_data['Prediction RFC']=''
 
-        for i in range(len(input_data)):
-          arr = input_data.iloc[i, :- 1].values
-          input_data['Prediction RFC'][i] = model. predict([arr])[0]
-        input_data.to_csv('PredictedHeartLR.csv')
+        # Ensure DataFrame copy to avoid SettingWithCopyWarning
+        input_data = input_data.copy()
+
+        # Vectorized prediction instead of looping
+        arr = input_data.iloc[:, :-1].values  # Extract feature values
+        input_df = pd.DataFrame(arr, columns=input_data.columns[:-1])  # Preserve feature names
+        input_data["Prediction RFC"] = model.predict(input_df)  # Make predictions
+        
         yes_count = (input_data['Prediction RFC'] == 1).sum()  # Count heart disease cases
         no_count = (input_data['Prediction RFC'] == 0).sum()  # Count no disease cases
 
-        # Display the predictions
-        st. subheader("Predictions:")
-        st.write(input_data)
-        st.markdown(get_binary_file_downloader_html(input_data),unsafe_allow_html=True)
+        # Convert DataFrame to CSV Buffer (No Local File Creation)
+        buffer = BytesIO()
+        input_data.to_csv(buffer, index=False)
+        buffer.seek(0)
+
+        # Display Predictions
+        st.subheader("Predictions:")
+        st.dataframe(input_data)
+
+        # Provide Download Button Instead of Permanent File Creation
+        st.download_button(
+            label="Download Predictions CSV",
+            data=buffer.getvalue(),
+            file_name="PredictedHeartLR.csv",
+            mime="text/csv"
+        )
 
         labels = ['Heart Disease', 'No Heart Disease']
         sizes = [yes_count, no_count]
