@@ -5,5 +5,5 @@ seaborn==0.13.2
 matplotlib==3.10.0
 scikeras==0.13.0
 tensorflow==2.18.0
-streamlit==1.10.0
+streamlit==1.45.0
 altair==4.2.2
